@@ -1601,47 +1601,7 @@ switch:
     restore_mode: RESTORE_DEFAULT_OFF
 
   ##### PHYSICAL SWITCH 1 #####
-  - name: Relay 1
-    platform: gpio
-    id: relay_1
-    pin:
-      number: 22
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - lambda: |-
-            if (id(relay_settings) & RelaySettings::Relay1_Local)
-              update_bitwise_setting(id(buttons_settings), true, ButtonSettings::ButtonLeft_State);
-            refresh_relays->execute(1);
-            refresh_hardware_buttons_bars->execute(1);
-    on_turn_off:
-      then:
-        - lambda: |-
-            if (id(relay_settings) & RelaySettings::Relay1_Local)
-              update_bitwise_setting(id(buttons_settings), false, ButtonSettings::ButtonLeft_State);
-            refresh_relays->execute(1);
-            refresh_hardware_buttons_bars->execute(1);
-  ##### PHYSICAL SWITCH 2 ######
-  - name: Relay 2
-    platform: gpio
-    id: relay_2
-    pin:
-      number: 19
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      then:
-        - lambda: |-
-            if (id(relay_settings) & RelaySettings::Relay2_Local)
-              update_bitwise_setting(id(buttons_settings), true, ButtonSettings::ButtonRight_State);
-            refresh_relays->execute(2);
-            refresh_hardware_buttons_bars->execute(2);
-    on_turn_off:
-      then:
-        - lambda: |-
-            if (id(relay_settings) & RelaySettings::Relay2_Local)
-              update_bitwise_setting(id(buttons_settings), false, ButtonSettings::ButtonRight_State);
-            refresh_relays->execute(2);
-            refresh_hardware_buttons_bars->execute(2);
+  
 
   ##### DISPLAY ALWAYS ON #####
   - name: Nextion display - Power
