@@ -334,23 +334,7 @@ api:
               }
             }
 
-    # Hardware Button State Indication Service
-    - service: hw_button_state
-      variables:
-        button_mask: int  # Bitwise value for buttons: 1 for "left button", 2 for "right button", 3 for both buttons
-        state: bool       # State for the button(s) indication: true for active, false for inactive
-      then:
-        - lambda: |-
-            if (!id(is_uploading_tft)) {
-              // Updates the visual state indication for hardware buttons
-              // Use bitwise AND to check specific bits
-              if (button_mask & 1) // Checks if the least significant bit is set (left button)
-                update_bitwise_setting(id(buttons_settings), state, ButtonSettings::ButtonLeft_State);
-              if (button_mask & 2) // Checks if the second least significant bit is set (right button)
-                update_bitwise_setting(id(buttons_settings), state, ButtonSettings::ButtonRight_State);
-              // Refreshes the indication bars on the display
-              refresh_hardware_buttons_bars->execute(button_mask);
-            }
+   
 
     # Icon Service
     - service: icon
@@ -452,19 +436,14 @@ api:
                       disp1->set_component_font_color("home.chip_relay2", id(home_relay2_icon_color));
                     }
 
-                    // Buttons bars settings
-                    id(buttons_bars_pages) = button_bar_pages;
-                    update_bitwise_setting(id(buttons_settings), button_left, ButtonSettings::ButtonLeft_Enabled);
-                    update_bitwise_setting(id(buttons_settings), button_right, ButtonSettings::ButtonRight_Enabled);
-
+                 
                     if (button_bar_color_on.size() == 3)
                       id(buttons_color_on) = rgbTo565(button_bar_color_on);
                     if (button_bar_color_off.size() == 3)
                       id(buttons_color_off) = rgbTo565(button_bar_color_off);
 
                     // Refresh relays display
-                    refresh_relays->execute(3);
-                    refresh_hardware_buttons_bars->execute(3);
+                  
                   }
                   blueprint_status->publish_state(int(blueprint_status->raw_state) | (1 << 4));
 
@@ -1976,21 +1955,7 @@ script:
               });
           }
 
-  - id: display_embedded_temp
-    mode: restart
-    then:
-      - lambda: |-
-          if (id(embedded_indoor_temp) or !wifi_component->is_connected() or !api_server->is_connected()) {
-            const std::string temp_units = "${temp_units}";
-            const bool temp_unit_fahrenheit = (temp_units == "°F" || temp_units == "F" || temp_units == "°f" || temp_units == "f");
-            char buffer[15]; // Buffer for formatted temperature string
-            if (temp_unit_fahrenheit) {
-              snprintf(buffer, sizeof(buffer), "%.0f${temp_units}", (id(temp_nspanel).state * 9.0 / 5.0) + 32); // Fahrenheit with no decimal
-            } else {
-              snprintf(buffer, sizeof(buffer), "%.1f${temp_units}", id(temp_nspanel).state); // Celsius with one decimal
-            }
-            id(disp1)->set_component_text("home.indr_temp", adjustDecimalSeparator(buffer, id(mui_decimal_separator)).c_str());
-          }
+ 
 
   - id: display_wrapped_text
     mode: parallel
@@ -2726,64 +2691,7 @@ script:
           disp1->set_component_text("home.meridiem", (time_format_str.find("%p") != std::string::npos) ? meridiem_text.c_str() : " ");
           disp1->set_component_text("home.time", id(time_provider).now().strftime(time_format_str).c_str());
 
-  - id: refresh_hardware_buttons_bars
-    mode: restart
-    parameters:
-      button_mask: uint8_t
-    then:
-      - lambda: |-
-          #if ESPHOME_LOG_LEVEL > ESPHOME_LOG_LEVEL_DEBUG
-          ESP_LOGV("script.refresh_hardware_buttons_bars", "Page:               %s", current_page->state.c_str());
-          ESP_LOGV("script.refresh_hardware_buttons_bars", "Page id:            %i", get_page_id(current_page->state.c_str()));
-          ESP_LOGV("script.refresh_hardware_buttons_bars", "buttons_bars_pages: %" PRIu32, id(buttons_bars_pages));
-          ESP_LOGV("script.refresh_hardware_buttons_bars", "relay_settings:     %i", id(relay_settings));
-          ESP_LOGV("script.refresh_hardware_buttons_bars", "button_mask:        %i", button_mask);
-          #endif
-          if (!id(is_uploading_tft) and ((id(buttons_bars_pages) & (1 << get_page_id(current_page->state.c_str()))) != 0)) {
-            switch (int(display_mode->state)) {
-              case 1:  // EU model
-                if (button_mask & 1 and id(buttons_settings) & ButtonSettings::ButtonLeft_Enabled) {  // Left button
-                  disp1->fill_area(48, 307, 118, 3, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(47, 308, 120, 1, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                if (button_mask & 2 and id(buttons_settings) & ButtonSettings::ButtonRight_Enabled) {  // Right button
-                  disp1->fill_area(289, 307, 118, 3, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(288, 308, 120, 1, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                break;
-              case 2:  // US Portrait
-                if (button_mask & 1 and id(buttons_settings) & ButtonSettings::ButtonLeft_Enabled) {  // Left button
-                  disp1->fill_area(17, 466, 118, 3, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(16, 467, 120, 1, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                if (button_mask & 2 and id(buttons_settings) & ButtonSettings::ButtonRight_Enabled) {  // Right button
-                  disp1->fill_area(184, 466, 118, 3, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(183, 467, 120, 1, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                break;
-              case 3:  // US Landscape
-                if (button_mask & 1 and id(buttons_settings) & ButtonSettings::ButtonLeft_Enabled) {  // Left button
-                  disp1->fill_area(467, 174, 3, 118, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(468, 173, 1, 120, (id(buttons_settings) & ButtonSettings::ButtonLeft_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                if (button_mask & 2 and id(buttons_settings) & ButtonSettings::ButtonRight_Enabled) {  // Right button
-                  disp1->fill_area(467, 28, 3, 118, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                  disp1->fill_area(468, 27, 1, 120, (id(buttons_settings) & ButtonSettings::ButtonRight_State) ? id(buttons_color_on) : id(buttons_color_off));
-                }
-                break;
-            }
-          }
-
-  - id: refresh_relays
-    mode: restart
-    parameters:
-      relay_mask: uint8_t
-    then:
-      - lambda: |-
-          // Chips - Relays
-          if (!id(is_uploading_tft) and relay_mask & 1) disp1->set_component_text("home.chip_relay1", (relay_1->state) ? id(home_relay1_icon) : "\uFFFF");
-          if (!id(is_uploading_tft) and relay_mask & 2) disp1->set_component_text("home.chip_relay2", (relay_2->state) ? id(home_relay2_icon) : "\uFFFF");
-
+ 
   - id: refresh_wifi_icon
     mode: restart
     then:
