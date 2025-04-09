@@ -176,8 +176,6 @@ time:
         then:
           - lambda: |-
               refresh_datetime->execute();
-              refresh_relays->execute(3);
-              refresh_hardware_buttons_bars->execute(3);
               refresh_wifi_icon->execute();
       - seconds: 30  # Watchdog
         then:
@@ -1326,25 +1324,7 @@ number:
             disp1->send_command_printf("brightness_sleep=%i", int(x));
             page_screensaver->execute();
 
-  ##### Temperature Correction #####
-  - id: temperature_correction
-    name: Temperature Correction
-    platform: template
-    entity_category: config
-    unit_of_measurement: °C
-    min_value: -10
-    max_value: 10
-    initial_value: 0
-    step: 0.1
-    mode: box
-    restore_value: true
-    internal: false
-    optimistic: true
-    on_value:
-      - logger.log: Temperature correction changed.
-      - delay: 1s
-      - lambda: temp_nspanel->publish_state(temp_nspanel->raw_state);
-
+  
   ##### Timers settings #####
   - name: Timeout Page
     platform: template
@@ -2258,9 +2238,7 @@ script:
           id(is_embedded_thermostat) = embedded_climate;
 
           // Indoor temperature
-          id(embedded_indoor_temp) = embedded_indoor_temperature;
-          display_embedded_temp->execute();
-
+          
   - id: page_alarm
     mode: restart
     then:  # There's nothing here so far
@@ -2460,9 +2438,6 @@ script:
           if (!detailed_entity->state.empty())
             ESP_LOGD("script.page_changed", "Entity shown: %s", detailed_entity->state.c_str());
 
-          // Update buttons bars on screen
-          refresh_hardware_buttons_bars->execute(3);
-
           // Reset timers
           if (current_page->state != "screensaver") timer_reset_all->execute();
 
@@ -2508,7 +2483,7 @@ script:
           else if (current_page->state == "weather04") page_weather04->execute();
           else if (current_page->state == "weather05") page_weather05->execute();
       - delay: 1s
-      - lambda: refresh_hardware_buttons_bars->execute(3);
+      
 
   - id: page_climate
     mode: restart
@@ -2572,7 +2547,7 @@ script:
     mode: restart
     then:
       - lambda:
-          refresh_relays->execute(3);
+          
           refresh_wifi_icon->execute();
 
   - id: page_keyb_num
@@ -2905,7 +2880,7 @@ script:
           boot_progress->stop();
           change_climate_state->stop();
           check_versions->stop();
-          display_embedded_temp->stop();
+          
           display_wrapped_text->stop();
           dump_config->stop();
           global_settings->stop();
@@ -2946,7 +2921,7 @@ script:
           page_weather05->stop();
           page_weather->stop();
           refresh_datetime->stop();
-          refresh_relays->stop();
+          
           refresh_wifi_icon->stop();
           service_call_alarm_control_panel->stop();
           set_baud_rate->stop();
